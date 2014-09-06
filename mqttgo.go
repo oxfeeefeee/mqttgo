@@ -13,7 +13,7 @@
 // limitations under the License.
 
 
-// This file contains commonly used types in msg package
+// This file contains commonly used types in mqttgo package
 //
 // Message format:
 // |------------------------------------------------------------------|
@@ -25,7 +25,7 @@
 // |------------------------------------------------------------------|
 // |                              Payload                             |
 // |------------------------------------------------------------------|
-package msg
+package mqttgo
 
 import (
     "io"

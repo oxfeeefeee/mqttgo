@@ -24,7 +24,7 @@
 // - MsgPingReq
 // - MsgPingResp
 // - Disconnect
-package msg
+package mqttgo
 
 import (
     "io"

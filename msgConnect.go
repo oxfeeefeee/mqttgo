@@ -14,7 +14,7 @@
 
 
 // This file implements type MsgConnect and MsgConnAct
-package msg
+package mqttgo
 
 import (
     "io"

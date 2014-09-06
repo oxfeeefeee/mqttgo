@@ -18,7 +18,7 @@
 // - MsgSubAck
 // - MsgUnsubscribe
 // - MsgUnsubAck
-package msg
+package mqttgo
 
 import (
     "io"

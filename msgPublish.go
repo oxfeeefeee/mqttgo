@@ -19,7 +19,7 @@
 // - MsgPubRec
 // - MsgPubRel
 // - MsgPubComp
-package msg
+package mqttgo
 
 import (
     "io"

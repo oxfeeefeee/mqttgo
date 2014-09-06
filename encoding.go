@@ -16,7 +16,7 @@
 // This file implements type len4 and str,
 // which are for encoding/decoding length value and string value.
 // Also implements Read/Write uint8/uint16
-package msg
+package mqttgo
 
 import (
     "io"
