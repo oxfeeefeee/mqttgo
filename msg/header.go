@@ -52,8 +52,8 @@ func (h *Header) SetDup(d bool) {
 }
 
 // Getter of Qos level
-func (h Header) Qos() (Qos, error) {
-    l := Qos(get2Bits(byte(h), 1))
+func (h Header) Qos() (QosLevel, error) {
+    l := QosLevel(get2Bits(byte(h), 1))
     if l.Valid() {
         return l, nil
     } else {
@@ -62,7 +62,7 @@ func (h Header) Qos() (Qos, error) {
 }
 
 // Setter of Qos level
-func (h *Header) SetQos(l Qos) error {
+func (h *Header) SetQos(l QosLevel) error {
     if !l.Valid() {
         return ErrBadQosLevel
     }
@@ -81,7 +81,7 @@ func (h *Header) SetRetain(d bool) {
 }
 
 // Decode header
-func (h *Header) ReadFrom(r io.Reader) error {
+func (h *Header) readFrom(r io.Reader) error {
     var buf [1]byte
     if _, err := io.ReadFull(r, buf[:]); err != nil {
         return err
@@ -91,10 +91,10 @@ func (h *Header) ReadFrom(r io.Reader) error {
 }
 
 // Encode header, along with the length
-func (h *Header) Bytes(length uint32) ([]byte, error) {
+func (h *Header) bytes(length uint32) ([]byte, error) {
     p := make([]byte, 1, 5)
     p[0] = byte(*h)
-    if ret, err := Len4(length).Bytes(); err != nil {
+    if ret, err := len4(length).bytes(); err != nil {
         return nil, err
     } else {
         p = append(p, ret...)

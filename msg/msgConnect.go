@@ -13,7 +13,7 @@
 // limitations under the License.
 
 
-// This file implements type MsgConnect
+// This file implements type MsgConnect and MsgConnAct
 package msg
 
 import (
@@ -21,41 +21,59 @@ import (
     "bytes"
     )
 
+const (
+    RCAccepted ReturnCode = iota
+    RCBadVersion
+    RCIdRejected
+    RCServerUnavailable
+    RCBadUserPassword
+    )
+
+type ReturnCode uint8 
+
+func (c ReturnCode) Valid() bool {
+    return c <= RCBadUserPassword
+}
+
 type MsgConnect struct {
     H           Header  // Fixed header
-    ProtName    Str     // Protocal name
+    ProtName    string  // Protocal name
     ProtVer     uint8   // Protocal version number
     flags       byte    // Connect flags
     KeepAlive   uint16  // Keep alive timer
-    ClientId    Str     // Client identifier
-    WillTopic   Str
-    WillMsg     Str
-    UserName    Str
-    Password    Str
+    ClientId    string  // Client identifier
+    WillTopic   string
+    WillMsg     string
+    UserName    string
+    Password    string
 }
 
-// Decode Msg from r, the fixed header and the length is already read
-func (m *MsgConnect) ReadFrom(r io.Reader, h Header, length uint32) error {
+type MsgConnAct struct {
+    H   Header
+    RC  ReturnCode
+}
+
+func (m *MsgConnect) readFrom(r io.Reader, h Header, length uint32) error {
     m.H = h
     var err error
     lr := &io.LimitedReader{r, int64(length)}
-    if m.ProtName, err = ReadStr(lr); err != nil {
+    if m.ProtName, err = readStr(lr); err != nil {
         return err
-    } else if m.ProtVer, err = ReadUint8(lr); err != nil {
+    } else if m.ProtVer, err = readUint8(lr); err != nil {
         return err
-    } else if m.flags, err = ReadUint8(lr); err != nil {
+    } else if m.flags, err = readUint8(lr); err != nil {
         return err
-    } else if m.KeepAlive, err = ReadUint16(lr); err != nil {
+    } else if m.KeepAlive, err = readUint16(lr); err != nil {
         return err
-    } else if m.ClientId, err = ReadStr(lr); err != nil {
+    } else if m.ClientId, err = readStr(lr); err != nil {
         return err
-    } else if m.WillTopic, err = ReadStr(lr); err != nil {
+    } else if m.WillTopic, err = readStr(lr); err != nil {
         return err
-    } else if m.WillMsg, err = ReadStr(lr); err != nil {
+    } else if m.WillMsg, err = readStr(lr); err != nil {
         return err
-    } else if m.UserName, err = ReadStr(lr); err != nil {
+    } else if m.UserName, err = readStr(lr); err != nil {
         return err
-    } else if m.Password, err = ReadStr(lr); err != nil {
+    } else if m.Password, err = readStr(lr); err != nil {
         return err
     }
     if lr.N != 0 {
@@ -64,37 +82,28 @@ func (m *MsgConnect) ReadFrom(r io.Reader, h Header, length uint32) error {
     return nil
 }
 
-// Encode Msg
-func (m *MsgConnect) WriteTo(w io.Writer) error {
+func (m *MsgConnect) writeTo(w io.Writer) error {
     b := new(bytes.Buffer)
-    if err := m.ProtName.WriteTo(b); err != nil {
+    if err := str(m.ProtName).writeTo(b); err != nil {
         return err 
-    } else if err := WriteUint8(b, m.ProtVer); err != nil {
+    } else if err := writeUint8(b, m.ProtVer); err != nil {
         return err
-    } else if err := WriteUint8(b, m.flags); err != nil {
+    } else if err := writeUint8(b, m.flags); err != nil {
         return err
-    } else if err := WriteUint16(b, m.KeepAlive); err != nil {
+    } else if err := writeUint16(b, m.KeepAlive); err != nil {
         return err
-    } else if err := m.ClientId.WriteTo(b); err != nil {
+    } else if err := str(m.ClientId).writeTo(b); err != nil {
         return err
-    } else if err := m.WillTopic.WriteTo(b); err != nil {
+    } else if err := str(m.WillTopic).writeTo(b); err != nil {
         return err
-    } else if err := m.WillMsg.WriteTo(b); err != nil {
+    } else if err := str(m.WillMsg).writeTo(b); err != nil {
         return err
-    } else if err := m.UserName.WriteTo(b); err != nil {
+    } else if err := str(m.UserName).writeTo(b); err != nil {
         return err
-    } else if err := m.Password.WriteTo(b); err != nil {
+    } else if err := str(m.Password).writeTo(b); err != nil {
         return err
     }
-    p := b.Bytes()
-    if err := WriteUint8(w, byte(m.H)); err != nil {
-        return err
-    } else if err := Len4(len(p)).WriteTo(w); err != nil {
-        return err
-    } else if _, err := w.Write(p); err != nil {
-        return err
-    } 
-    return nil
+    return writeMsgData(w, m.H, b.Bytes())
 }
 
 // Getter of Clean Session flag
@@ -118,8 +127,8 @@ func (m *MsgConnect) SetWillFlag(v bool) {
 }
 
 // Getter of Will-Qos level
-func (m *MsgConnect) WillQos() (Qos, error) {
-    l := Qos(get2Bits(m.flags, 3))
+func (m *MsgConnect) WillQos() (QosLevel, error) {
+    l := QosLevel(get2Bits(m.flags, 3))
     if l.Valid() {
         return l, nil
     } else {
@@ -128,7 +137,7 @@ func (m *MsgConnect) WillQos() (Qos, error) {
 }
 
 // Setter of Will-Qos level
-func (m *MsgConnect) SetWillQos(l Qos) error {
+func (m *MsgConnect) SetWillQos(l QosLevel) error {
     if !l.Valid() {
         return ErrBadQosLevel
     }
@@ -164,4 +173,26 @@ func (m *MsgConnect) UserNameFlag() bool {
 // Setter of User Name flag
 func (m *MsgConnect) SetUserNameFlag(d bool) {
     set1Bit(&m.flags, d, 0x80)
+}
+
+func (m *MsgConnAct) readFrom(r io.Reader, h Header, length uint32) error {
+    m.H = h
+    lr := &io.LimitedReader{r, int64(length)}
+    if _, err := readUint8(lr); err != nil { // Reserved byte
+        return err
+    } else if rc, err := readUint8(lr); err != nil {
+        return err
+    } else {
+        m.RC = ReturnCode(rc)
+    }
+    if !m.RC.Valid() {
+        return ErrBadRC
+    } else if lr.N != 0 {
+        return ErrWrongLength
+    }
+    return nil
+}
+
+func (m *MsgConnAct) writeTo(w io.Writer) error {
+    return writeMsgData(w, m.H, []byte{0, byte(m.RC)})
 }

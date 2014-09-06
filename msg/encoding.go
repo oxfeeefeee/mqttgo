@@ -13,7 +13,7 @@
 // limitations under the License.
 
 
-// This file implements type Len4 and Str,
+// This file implements type len4 and str,
 // which are for encoding/decoding length value and string value.
 // Also implements Read/Write uint8/uint16
 package msg
@@ -28,10 +28,10 @@ import (
 // The variable length encoding scheme uses a single byte for messages up to 127 bytes long. 
 // Longer messages are handled as follows. Seven bits of each byte encode the remaining 
 // Length data, and the eighth bit indicates any following bytes in the representation.
-type Len4 uint32
+type len4 uint32
 
-// Read from io.Reader and decode as Len4
-func ReadLen4(r io.Reader) (uint32, error) {
+// Read from io.Reader and decode as len4
+func readLen4(r io.Reader) (uint32, error) {
     var val uint32
     var shift uint
     for i := 0; i < 4; i++ {
@@ -47,12 +47,12 @@ func ReadLen4(r io.Reader) (uint32, error) {
         }
         shift += 7
     }
-    return val, errors.New("ReadLen4: Bad format reading Len4")
+    return val, errors.New("readLen4: Bad format reading len4")
 }
 
-// Write the encoded Len4 to io.Writer
-func (l Len4) WriteTo(w io.Writer) error {
-    if p, err := l.Bytes(); err != nil {
+// Write the encoded len4 to io.Writer
+func (l len4) writeTo(w io.Writer) error {
+    if p, err := l.bytes(); err != nil {
         return err
     } else {
         _, err := w.Write(p)
@@ -60,8 +60,8 @@ func (l Len4) WriteTo(w io.Writer) error {
     }
 }
 
-// Encode Len4
-func (l Len4) Bytes() ([]byte, error) {
+// Encode len4
+func (l len4) bytes() ([]byte, error) {
     if l == 0 {
         return make([]byte, 1), nil
     }
@@ -75,37 +75,29 @@ func (l Len4) Bytes() ([]byte, error) {
             return p.Bytes(), nil
         }
     }
-    return nil, errors.New("Len4.Bytes: Len4 value out of range")
+    return nil, errors.New("len4.bytes: len4 value out of range")
 }
 
-// Validate Len4
-func (l Len4) Validate() error {
-    if l < 0 || l > 268435455 {
-        errors.New("Len4.Validate: Len4 value out of range")
-    }
-    return nil
-}
+type str string
 
-type Str string
-
-// Read from io.Reader and decode as Str
-func ReadStr(r io.Reader) (Str, error) {
-    if l, err := ReadLen4(r); err != nil {
+// Read from io.Reader and decode as str
+func readStr(r io.Reader) (string, error) {
+    if l, err := readLen4(r); err != nil {
         return "", err
     } else {
         p := make([]byte, l)
         if _, err := io.ReadFull(r, p); err != nil {
             return "", err
         } else {
-            return Str(p), nil
+            return string(p), nil
         }
     }
 }
 
-// Write the encoded Str to io.Writer
-func (s Str) WriteTo(w io.Writer) error {
-    l := Len4(len(s))
-    if err := l.WriteTo(w); err != nil {
+// Write the encoded str to io.Writer
+func (s str) writeTo(w io.Writer) error {
+    l := len4(len(s))
+    if err := l.writeTo(w); err != nil {
         return err
     }
     if _, err := io.WriteString(w, string(s)); err != nil {
@@ -115,7 +107,7 @@ func (s Str) WriteTo(w io.Writer) error {
 }
 
 // Read uint8 from io.Reader
-func ReadUint8(r io.Reader) (uint8, error) {
+func readUint8(r io.Reader) (uint8, error) {
     var buf [1]byte
     if _, err := io.ReadFull(r, buf[:]); err != nil {
         return 0, err
@@ -124,14 +116,14 @@ func ReadUint8(r io.Reader) (uint8, error) {
 }
 
 // Write uint8 to io.Writer
-func WriteUint8(w io.Writer, val uint8) error {
+func writeUint8(w io.Writer, val uint8) error {
     buf := [1]byte{val,}
     _, err := w.Write(buf[:])
     return err
 }
 
 // Read uint16 from io.Reader
-func ReadUint16(r io.Reader) (uint16, error) {
+func readUint16(r io.Reader) (uint16, error) {
     var buf [2]byte
     if _, err := io.ReadFull(r, buf[:]); err != nil {
         return 0, err
@@ -140,8 +132,53 @@ func ReadUint16(r io.Reader) (uint16, error) {
 }
 
 // Write uint16 to io.Write
-func WriteUint16(w io.Writer, val uint16) error {
+func writeUint16(w io.Writer, val uint16) error {
     buf := [2]byte{byte(val >> 8), byte(val & 0x00ff)}
     _, err := w.Write(buf[:])
     return err
+}
+
+// Read the length of the rest of the message
+func readMsgLen(r io.Reader) (uint32, error) {
+    if l, err := readLen4(r); err != nil {
+        return 0, err
+    } else {
+        return l, nil
+    }
+}
+
+// Helper function for writing msg
+func writeMsgData(w io.Writer, h Header, p []byte) error {
+    if err := writeUint8(w, byte(h)); err != nil {
+        return err
+    } else if err := len4(len(p)).writeTo(w); err != nil {
+        return err
+    } else if _, err := w.Write(p); err != nil {
+        return err
+    } 
+    return nil
+}
+
+// Gets one bit in a byte and returns as bool
+func get1Bit(f byte, mask byte) bool {
+    return (byte(f) & mask) != 0
+}
+
+// Sets one bit in a byte
+func set1Bit(f *byte, v bool, mask byte) {
+    *f = *f &^ 0x08
+    if v {
+        *f = *f | 0x08  
+    }
+}
+
+// Gets two bits in a byte and returns as byte
+func get2Bits(f byte, from uint) byte {
+    return (f << (6 - from)) >> 6
+}
+
+// Sets two bits in a byte
+func set2Bits(f *byte, val byte, from uint) {
+    mask := ^((byte(0xff) << (6 - from)) >> 6)
+    *f = (byte(*f) & mask) | (val << from)
 }

@@ -32,14 +32,6 @@ import (
     "errors"
     )
 
-var (
-    ErrBadMsgType = errors.New("mqttgo/msg: Bad message type")
-    ErrBadQosLevel = errors.New("mqttgo/msg: Bad Qos level")
-    ErrTooLong = errors.New("mqttgo/msg: Message too long")
-    ErrBadRC = errors.New("mqttgo/msg: Bad return code")
-    ErrWrongLength = errors.New("mqttgo/msg: Message length doesn't match with content")
-    )
-
 // Max length of the content of MsgPublish
 const PublishMaxLen = 1024 * 1024
 
@@ -64,25 +56,44 @@ const (
 )
 
 const (
-    QosAtMostOnce Qos = iota
+    QosAtMostOnce QosLevel = iota
     QosAtLeastOnce
     QosExactlyOnce
     )
 
-const (
-    RCAccepted RC = iota
-    RCBadVersion
-    RCIdRejected
-    RCServerUnavailable
-    RCBadUserPassword
+// Errors could happen when reading Msg 
+var (
+    ErrBadMsgType = errors.New("mqttgo/msg: Bad message type")
+    ErrBadQosLevel = errors.New("mqttgo/msg: Bad Qos level")
+    ErrTooLong = errors.New("mqttgo/msg: Message too long")
+    ErrBadRC = errors.New("mqttgo/msg: Bad return code")
+    ErrWrongLength = errors.New("mqttgo/msg: Message length doesn't match with content")
     )
+
+// A registry for creating Msg objects
+var msgRegistry map[MsgType]func() Msg = map[MsgType]func() Msg {
+    MsgTypeConnect:     func() Msg { return new(MsgConnect) },
+    MsgTypeConnAck:     func() Msg { return new(MsgConnAct) },
+    MsgTypePublish:     func() Msg { return new(MsgPublish) },
+    MsgTypePubAck:      func() Msg { return new(MsgPubAck) },
+    MsgTypePubRec:      func() Msg { return new(MsgPubRec) },
+    MsgTypePubRel:      func() Msg { return new(MsgPubRel) },
+    MsgTypePubComp:     func() Msg { return new(MsgPubComp) },
+    MsgTypeSubscribe:   func() Msg { return new(MsgSubscribe) },
+    MsgTypeSubAck:      func() Msg { return new(MsgSubAck) },
+    MsgTypeUnsubscribe: func() Msg { return new(MsgUnsubscribe) },
+    MsgTypeUnsubAck:    func() Msg { return new(MsgUnsubAck) },
+    MsgTypePingReq:     func() Msg { return new(MsgPingReq) },
+    MsgTypePingResp:    func() Msg { return new(MsgPingResp) },
+    MsgTypeDisconnect:  func() Msg { return new(MsgDisconnect) },
+}
 
 // All MQTT messages implement this interface
 type Msg interface {
     // Decode Msg from r, the fixed header and the length is already read
-    ReadFrom(r io.Reader, h Header, length uint32) error
+    readFrom(r io.Reader, h Header, length uint32) error
     // Encode Msg
-    WriteTo(w io.Writer) error
+    writeTo(w io.Writer) error
 }
 
 type MsgType uint8
@@ -92,50 +103,40 @@ func (t MsgType) Valid() bool {
 }
 
 // Qaulity of service
-type Qos uint8
+type QosLevel uint8
 
-func (q Qos) Valid() bool {
+func (q QosLevel) Valid() bool {
     return q <= QosExactlyOnce
 }
 
-// Return code
-type RC uint8 
-
-func (c RC) Valid() bool {
-    return c <= RCBadUserPassword
-}
-
-// Read the length of the rest of the message
-func readMsgLen(r io.Reader) (uint32, error) {
-    if l, err := ReadLen4(r); err != nil {
-        return 0, err
+// Read a Msg from an io.Reader
+func Read(r io.Reader) (Msg, error) {
+    var h Header
+    if err := h.readFrom(r); err != nil {
+        return nil, err
+    } else if l, err := readMsgLen(r); err != nil {
+        return nil, err
+    } else if err := h.Validate(l); err != nil {
+        return nil, err
     } else {
-        return l, nil
+        t, _ := h.Type()
+        return msgRegistry[t](), nil
     }
 }
 
-// Gets one bit in a byte and returns as bool
-func get1Bit(f byte, mask byte) bool {
-    return (byte(f) & mask) != 0
+// Write a Msg to io.Writer
+func Write(w io.Writer, m Msg) error {
+    return m.writeTo(w)
 }
 
-// Sets one bit in a byte
-func set1Bit(f *byte, v bool, mask byte) {
-    *f = *f &^ 0x08
-    if v {
-        *f = *f | 0x08  
-    }
+type MsgPingReq struct {
+    msgHeaderOnly
 }
 
-// Gets two bits in a byte and returns as byte
-func get2Bits(f byte, from uint) byte {
-    return (f << (6 - from)) >> 6
+type MsgPingResp struct {
+    msgHeaderOnly
 }
 
-// Sets two bits in a byte
-func set2Bits(f *byte, val byte, from uint) {
-    mask := ^((byte(0xff) << (6 - from)) >> 6)
-    *f = (byte(*f) & mask) | (val << from)
+type MsgDisconnect struct {
+    msgHeaderOnly
 }
-
-
