@@ -72,6 +72,7 @@ func (l len4) bytes() ([]byte, error) {
             digit = digit | 0x80
             p.WriteByte(byte(digit))
         } else {
+            p.WriteByte(byte(digit))
             return p.Bytes(), nil
         }
     }

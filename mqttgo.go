@@ -136,6 +136,14 @@ func Write(w io.Writer, m Msg) error {
     return m.writeTo(w)
 }
 
+// Write MsgTypeConnAck
+func WriteConnAck(w io.Writer, rc ReturnCode) error {
+    var m MsgConnAct
+    m.H.SetType(MsgTypeConnAck)
+    m.RC = rc
+    return m.writeTo(w)
+}
+
 type MsgPingReq struct {
     msgHeaderOnly
 }
