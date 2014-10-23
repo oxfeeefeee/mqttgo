@@ -29,6 +29,7 @@ package mqttgo
 
 import (
     "io"
+    "log"
     "errors"
     )
 
@@ -39,7 +40,8 @@ const PublishMaxLen = 1024 * 1024
 const DefaultMaxLen = 1024 * 10
 
 const (
-    MsgTypeConnect MsgType = iota
+    _               MsgType = iota
+    MsgTypeConnect
     MsgTypeConnAck
     MsgTypePublish
     MsgTypePubAck
@@ -120,7 +122,12 @@ func Read(r io.Reader) (Msg, error) {
         return nil, err
     } else {
         t, _ := h.Type()
-        return msgRegistry[t](), nil
+        msg := msgRegistry[t]()
+        if err := msg.readFrom(r, h, l); err != nil {
+            return nil, err
+        }
+        log.Printf("READ message type: %d", t)
+        return msg, nil
     }
 }
 

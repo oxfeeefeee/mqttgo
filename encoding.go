@@ -82,7 +82,7 @@ type str string
 
 // Read from io.Reader and decode as str
 func readStr(r io.Reader) (string, error) {
-    if l, err := readLen4(r); err != nil {
+    if l, err := readUint16(r); err != nil {
         return "", err
     } else {
         p := make([]byte, l)
