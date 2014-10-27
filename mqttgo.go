@@ -55,6 +55,7 @@ const (
     MsgTypePingReq
     MsgTypePingResp
     MsgTypeDisconnect
+    MsgTypeInvaild
 )
 
 const (
@@ -92,6 +93,8 @@ var msgRegistry map[MsgType]func() Msg = map[MsgType]func() Msg {
 
 // All MQTT messages implement this interface
 type Msg interface {
+    // Returns the type of Msg
+    MsgHeader() *Header
     // Decode Msg from r, the fixed header and the length is already read
     readFrom(r io.Reader, h Header, length uint32) error
     // Encode Msg
@@ -121,13 +124,16 @@ func Read(r io.Reader) (Msg, error) {
     } else if err := h.Validate(l); err != nil {
         return nil, err
     } else {
-        t, _ := h.Type()
-        msg := msgRegistry[t]()
-        if err := msg.readFrom(r, h, l); err != nil {
-            return nil, err
+        if t := h.Type(); t == MsgTypeInvaild {
+            return nil, ErrBadMsgType
+        } else {
+            msg := msgRegistry[t]()
+            if err := msg.readFrom(r, h, l); err != nil {
+                return nil, err
+            }
+            log.Printf("READ message type: %d", t)
+            return msg, nil
         }
-        log.Printf("READ message type: %d", t)
-        return msg, nil
     }
 }
 

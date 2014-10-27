@@ -35,6 +35,10 @@ type msgSimpleAck struct {
     MsgId   uint16
 }
 
+func (m *msgSimpleAck) MsgHeader() *Header {
+    return &(m.H)
+}
+
 func (m *msgSimpleAck) readFrom(r io.Reader, h Header, length uint32) error {
     m.H = h
     var err error
@@ -53,6 +57,10 @@ func (m *msgSimpleAck) writeTo(w io.Writer) error {
 
 type msgHeaderOnly struct {
     H   Header
+}
+
+func (m *msgHeaderOnly) MsgHeader() *Header {
+    return &(m.H)
 }
 
 func (m *msgHeaderOnly) readFrom(r io.Reader, h Header, length uint32) error {

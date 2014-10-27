@@ -49,6 +49,10 @@ type MsgPubComp struct {
     msgSimpleAck
 }
 
+func (m *MsgPublish) MsgHeader() *Header {
+    return &(m.H)
+}
+
 func (m *MsgPublish) readFrom(r io.Reader, h Header, length uint32) error {
     m.H = h
     var err error

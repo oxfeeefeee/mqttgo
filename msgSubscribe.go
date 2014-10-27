@@ -47,6 +47,10 @@ type MsgUnsubAck struct {
     msgSimpleAck
 }
 
+func (m *MsgSubscribe) MsgHeader() *Header {
+    return &(m.H)
+}
+
 func (m *MsgSubscribe) readFrom(r io.Reader, h Header, length uint32) error {
     m.H = h
     var err error
@@ -85,6 +89,10 @@ func (m *MsgSubscribe) writeTo(w io.Writer) error {
     return writeMsgData(w, m.H, b.Bytes())
 }
 
+func (m *MsgSubAck) MsgHeader() *Header {
+    return &(m.H)
+}
+
 func (m *MsgSubAck) readFrom(r io.Reader, h Header, length uint32) error {
     m.H = h
     var err error
@@ -116,6 +124,10 @@ func (m *MsgSubAck) writeTo(w io.Writer) error {
         }
     }
     return writeMsgData(w, m.H, b.Bytes())
+}
+
+func (m *MsgUnsubscribe) MsgHeader() *Header {
+    return &(m.H)
 }
 
 func (m *MsgUnsubscribe) readFrom(r io.Reader, h Header, length uint32) error {

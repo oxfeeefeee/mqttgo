@@ -53,6 +53,10 @@ type MsgConnAct struct {
     RC  ReturnCode
 }
 
+func (m *MsgConnect) MsgHeader() *Header {
+    return &(m.H)
+}
+
 func (m *MsgConnect) readFrom(r io.Reader, h Header, length uint32) error {
     m.H = h
     var err error
@@ -179,6 +183,10 @@ func (m *MsgConnect) UserNameFlag() bool {
 // Setter of User Name flag
 func (m *MsgConnect) SetUserNameFlag(d bool) {
     set1Bit(&m.flags, d, 0x80)
+}
+
+func (m *MsgConnAct) MsgHeader() *Header {
+    return &(m.H)
 }
 
 func (m *MsgConnAct) readFrom(r io.Reader, h Header, length uint32) error {

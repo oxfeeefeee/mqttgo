@@ -22,12 +22,12 @@ import (
 type Header byte
 
 // Getter of MsgType
-func (h Header) Type() (MsgType, error) {
+func (h Header) Type() MsgType {
     t := MsgType(h >> 4)
     if t.Valid() {
-        return t, nil
+        return t
     } else {
-        return t, ErrBadMsgType
+        return MsgTypeInvaild
     }
 }
 
@@ -104,10 +104,10 @@ func (h *Header) bytes(length uint32) ([]byte, error) {
 
 // Validate header and the length of the message
 func (h *Header) Validate(length uint32) error {
-    t, err := h.Type()
-    if err != nil {
-        return err
-    } else if _, err = h.Qos(); err != nil {
+    t := h.Type()
+    if t == MsgTypeInvaild {
+        return ErrBadMsgType
+    } else if _, err := h.Qos(); err != nil {
         return err
     }
     switch t { // TODO better validation
