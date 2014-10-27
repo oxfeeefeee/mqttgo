@@ -58,9 +58,11 @@ func (m *MsgPublish) readFrom(r io.Reader, h Header, length uint32) error {
     } else if m.MsgId, err = readUint16(lr); err != nil {
         return err
     }
-    m.Content = make([]byte, lr.N)
-    if _, err := lr.Read(m.Content); err != nil {
-        return err
+    if lr.N > 0 {
+        m.Content = make([]byte, lr.N)
+        if _, err := lr.Read(m.Content); err != nil {
+            return err
+        }        
     }
     return nil
 }
