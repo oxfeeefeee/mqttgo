@@ -13,7 +13,7 @@
 // limitations under the License.
 
 
-// This file implements type MsgConnect and MsgConnAct
+// This file implements type MsgConnect and MsgConnAck
 package mqttgo
 
 import (
@@ -48,7 +48,7 @@ type MsgConnect struct {
     Password    string
 }
 
-type MsgConnAct struct {
+type MsgConnAck struct {
     H   Header
     RC  ReturnCode
 }
@@ -185,11 +185,11 @@ func (m *MsgConnect) SetUserNameFlag(d bool) {
     set1Bit(&m.flags, d, 0x80)
 }
 
-func (m *MsgConnAct) MsgHeader() *Header {
+func (m *MsgConnAck) MsgHeader() *Header {
     return &(m.H)
 }
 
-func (m *MsgConnAct) readFrom(r io.Reader, h Header, length uint32) error {
+func (m *MsgConnAck) readFrom(r io.Reader, h Header, length uint32) error {
     m.H = h
     lr := &io.LimitedReader{r, int64(length)}
     if _, err := readUint8(lr); err != nil { // Reserved byte
@@ -207,6 +207,6 @@ func (m *MsgConnAct) readFrom(r io.Reader, h Header, length uint32) error {
     return nil
 }
 
-func (m *MsgConnAct) writeTo(w io.Writer) error {
+func (m *MsgConnAck) writeTo(w io.Writer) error {
     return writeMsgData(w, m.H, []byte{0, byte(m.RC)})
 }

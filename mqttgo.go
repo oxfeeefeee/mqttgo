@@ -76,7 +76,7 @@ var (
 // A registry for creating Msg objects
 var msgRegistry map[MsgType]func() Msg = map[MsgType]func() Msg {
     MsgTypeConnect:     func() Msg { return new(MsgConnect) },
-    MsgTypeConnAck:     func() Msg { return new(MsgConnAct) },
+    MsgTypeConnAck:     func() Msg { return new(MsgConnAck) },
     MsgTypePublish:     func() Msg { return new(MsgPublish) },
     MsgTypePubAck:      func() Msg { return new(MsgPubAck) },
     MsgTypePubRec:      func() Msg { return new(MsgPubRec) },
@@ -142,12 +142,18 @@ func Write(w io.Writer, m Msg) error {
     return m.writeTo(w)
 }
 
-// Write MsgTypeConnAck
-func WriteConnAck(w io.Writer, rc ReturnCode) error {
-    var m MsgConnAct
+func NewConnAck(rc ReturnCode) *MsgConnAck {
+    var m MsgConnAck
     m.H.SetType(MsgTypeConnAck)
     m.RC = rc
-    return m.writeTo(w)
+    return &m
+}
+
+func NewPubAck(msgid uint16) *MsgPubAck {
+    var m MsgPubAck
+    m.H.SetType(MsgTypePubAck)
+    m.MsgId = msgid
+    return &m
 }
 
 type MsgPingReq struct {
