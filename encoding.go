@@ -97,8 +97,7 @@ func readStr(r io.Reader) (string, error) {
 
 // Write the encoded str to io.Writer
 func (s str) writeTo(w io.Writer) error {
-    l := len4(len(s))
-    if err := l.writeTo(w); err != nil {
+    if err := writeUint16(w, uint16(len(s))); err != nil {
         return err
     }
     if _, err := io.WriteString(w, string(s)); err != nil {

@@ -18,6 +18,7 @@ package mqttgo
 
 import (
     "io"
+    //"log"
     "bytes"
     )
 
@@ -71,17 +72,20 @@ func (m *MsgConnect) readFrom(r io.Reader, h Header, length uint32) error {
         return err
     } else if m.ClientId, err = readStr(lr); err != nil {
         return err
-    } else if m.WillFlag() {
+    }
+    if m.WillFlag() {
         if m.WillTopic, err = readStr(lr); err != nil {
             return err
         } else if m.WillMsg, err = readStr(lr); err != nil {
             return err
         }
-    } else if m.UserNameFlag() {
+    }
+    if m.UserNameFlag() {
         if m.UserName, err = readStr(lr); err != nil {
             return err
         }
-    } else if m.PasswordFlag() {
+    }
+    if m.PasswordFlag() {
         if m.Password, err = readStr(lr); err != nil {
             return err
         }
