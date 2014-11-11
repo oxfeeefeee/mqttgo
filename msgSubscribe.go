@@ -51,6 +51,10 @@ func (m *MsgSubscribe) MsgHeader() *Header {
     return &(m.H)
 }
 
+func (m *MsgSubscribe) Id() uint16 {
+    return m.MsgId
+}
+
 func (m *MsgSubscribe) readFrom(r io.Reader, h Header, length uint32) error {
     m.H = h
     var err error
@@ -91,6 +95,10 @@ func (m *MsgSubscribe) writeTo(w io.Writer) error {
 
 func (m *MsgSubAck) MsgHeader() *Header {
     return &(m.H)
+}
+
+func (m *MsgSubAck) Id() uint16 {
+    return m.MsgId
 }
 
 func (m *MsgSubAck) readFrom(r io.Reader, h Header, length uint32) error {

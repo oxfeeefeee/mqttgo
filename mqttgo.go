@@ -101,6 +101,13 @@ type Msg interface {
     writeTo(w io.Writer) error
 }
 
+type MsgWithId interface {
+    // Returns the type of Msg
+    MsgHeader() *Header
+    // Message ID
+    Id() uint16
+}
+
 type MsgType uint8
 
 func (t MsgType) Valid() bool {
@@ -140,6 +147,24 @@ func Read(r io.Reader) (Msg, error) {
 // Write a Msg to io.Writer
 func Write(w io.Writer, m Msg) error {
     return m.writeTo(w)
+}
+
+func ContentMsg(m Msg) bool {
+    t := m.MsgHeader().Type()
+    return t == MsgTypePublish ||
+        t == MsgTypeSubscribe ||
+        t == MsgTypeUnsubscribe
+}
+
+func NewPub(topic string, qos QosLevel, 
+    msgid uint16, content []byte) *MsgPublish {
+    var m MsgPublish
+    m.H.SetType(MsgTypePublish)
+    m.H.SetQos(qos)
+    m.Topic = topic
+    m.MsgId = msgid
+    m.Content = content
+    return &m
 }
 
 func NewConnAck(rc ReturnCode) *MsgConnAck {
