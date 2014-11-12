@@ -63,8 +63,13 @@ func (m *MsgPublish) readFrom(r io.Reader, h Header, length uint32) error {
     lr := &io.LimitedReader{r, int64(length)}
     if m.Topic, err = readStr(lr); err != nil {
         return err
-    } else if m.MsgId, err = readUint16(lr); err != nil {
+    }
+    if qos, err := h.Qos(); err != nil {
         return err
+    } else if qos >= QosAtLeastOnce {
+        if m.MsgId, err = readUint16(lr); err != nil {
+            return err
+        }
     }
     if lr.N > 0 {
         m.Content = make([]byte, lr.N)
@@ -79,8 +84,13 @@ func (m *MsgPublish) writeTo(w io.Writer) error {
     b := new(bytes.Buffer)
     if err := str(m.Topic).writeTo(b); err != nil {
         return err 
-    } else if err := writeUint16(b, m.MsgId); err != nil {
+    }
+    if qos, err := m.H.Qos(); err != nil {
         return err
+    } else if qos >= QosAtLeastOnce {
+        if err := writeUint16(b, m.MsgId); err != nil {
+            return err
+        }
     }
     p := b.Bytes()
     // Do not use writeMsgData becasue we don't want to merge two silces beforehand

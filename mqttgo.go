@@ -102,8 +102,7 @@ type Msg interface {
 }
 
 type MsgWithId interface {
-    // Returns the type of Msg
-    MsgHeader() *Header
+    Msg
     // Message ID
     Id() uint16
 }
