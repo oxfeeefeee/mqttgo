@@ -130,7 +130,7 @@ func Read(r io.Reader) (Msg, error) {
     } else if err := h.Validate(l); err != nil {
         return nil, err
     } else {
-        if t := h.Type(); t == MsgTypeInvaild {
+        if t := h.Type(); (t <= 0 || t >= MsgTypeInvaild) {
             return nil, ErrBadMsgType
         } else {
             msg := msgRegistry[t]()
