@@ -105,6 +105,8 @@ type MsgWithId interface {
     Msg
     // Message ID
     Id() uint16
+    // Set Message ID
+    SetId(id uint16)
 }
 
 type MsgType uint8
@@ -155,13 +157,11 @@ func ContentMsg(m Msg) bool {
         t == MsgTypeUnsubscribe
 }
 
-func NewPub(topic string, qos QosLevel, 
-    msgid uint16, content []byte) *MsgPublish {
+func NewPub(topic string, qos QosLevel, content []byte) *MsgPublish {
     var m MsgPublish
     m.H.SetType(MsgTypePublish)
     m.H.SetQos(qos)
     m.Topic = topic
-    m.MsgId = msgid
     m.Content = content
     return &m
 }

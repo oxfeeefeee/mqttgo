@@ -57,6 +57,10 @@ func (m *MsgPublish) Id() uint16 {
     return m.MsgId
 }
 
+func (m *MsgPublish) SetId(id uint16) {
+    m.MsgId = id
+}
+
 func (m *MsgPublish) readFrom(r io.Reader, h Header, length uint32) error {
     m.H = h
     var err error
