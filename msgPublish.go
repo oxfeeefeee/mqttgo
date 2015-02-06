@@ -75,11 +75,12 @@ func (m *MsgPublish) readFrom(r io.Reader, h Header, length uint32) error {
             return err
         }
     }
-    if lr.N > 0 {
-        m.Content = make([]byte, lr.N)
-        if _, err := lr.Read(m.Content); err != nil {
+    m.Content = make([]byte, lr.N)
+    for lr.N > 0 {
+        has := len(m.Content) - int(lr.N)
+        if _, err := lr.Read(m.Content[has:]); err != nil {
             return err
-        }        
+        }
     }
     return nil
 }

@@ -139,7 +139,7 @@ func Read(r io.Reader) (Msg, error) {
             if err := msg.readFrom(r, h, l); err != nil {
                 return nil, err
             }
-            log.Printf("READ message type: %d", t)
+            log.Printf("READ message type: %d, len %d", t, l)
             return msg, nil
         }
     }
